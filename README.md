@@ -1,0 +1,2 @@
+# Tronix-Data-Analysis
+Examined the Ethereum dataset: Tronix(TRX), consisting of almost 2 million token transactions. Preprocessed the data, removing the outliers and identified the distributions of number of user transactions by buyer by the seller. And found correlation of the number of users that made transactions on a specific date with the closing price on the same date. Also, modelled multiple regression to predict simple price return.
