@@ -1,0 +1,260 @@
+---
+title: "Analysis of Tronix token data"
+author: "Kavya Jampani,Beryl Mario Shairu Joseph Antony Bose"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###Ethereum and ERC-20 tokens
+Ethereum was proposed by Vitalik Buterin, a cryptocurrency researcher and programmer.
+It is a distributed public blockchain framework whichs uses the block chain technology to create smart contracts to provide provide a static and consistent transactions record.   
+   
+Although commonly associated with bitcoin, there are significant technical differences between the two. They both differ substantially in purpose and capability. Ethereum enables developers to build and deploy any decentralized application whereas Bitcoin offers one particular application of blockchain technology i.e, a peer-to-peer electronic cash system that enables online bitcoin payments.  In Ethereum blockchain, miners work to earn Ether, a type of crypto token that fuels the network. Ethereum is also used a platform to launch other cryptocurrencies  
+  
+The benefits of the Ethereum decentralized platform are as follows:  
+Immutability - A third party cannot make any changes to the data.  
+Corruption and Tamper proof - Apps are based on a network formed around the principle of consensus, making censorship impossible.  
+Secure- With no central point of failure and secured with cryprography, applications on this framework are well protected against hacking attacks and fraudulent activities.  
+Zero downtime - Applications can never go down and can never be switched off.  
+
+Token:  
+In general sense, a token is used to describe any digital asset. They serve as the transaction units on the blockchains that are created using the standard templates like that of Ethereum network, where user can create his own tokens. 
+
+ERC-20 Tokens:
+These are the tokens designed solely for the usage on Ethereum platform. ERC-20 is a technical standard used for smart contracts on the Ethereum blockchain for implementing tokens. It defined a common list of rules that an Ethereum token has to implement, giving developers the ability to program how new tokens will function within Ethereum ecosystem. According to Eherscan.io there are a total of 103621 of ERC-20 commpatible tokens found on Ethereum main network as of 07-26-2018. Because of ERC-20 token standard defintiion other developers can issue their own version sof the token and raise funds with an initial coin offering (ICO).   
+        Depending on its purpose, decentralized applications might use ERC-20 tokens to function as a currency, a share in a company or even proof of ownership. These tokens are created using smart contracts. ERC-20 makes the creation of new tokens extremely easy, and that is why Ethereum has become most popular platform for ICO's in 2017.  
+  
+###Primary Token  
+In our project we have considered Tronix token which is based on ERC-20 Ethereum standard.
+About the token:  
+TRON Foundation was established in september 2017 by Justin Sun.TRX is the cryptographic currency developed by TRON,which aims to be a decentralized entertainment content sharing platform using blockchain and peer-to-peer network technology. In 2018 TRON launched its own proprietary blockchain, Mainnet to which it migrated all the TRX (ERC-20) tokens that previously circulated on the Ethereum blockchain. In February 2018, TRX was ranked 15th on the list of largest cryptocurrencies by market capitalization.TRON Foundation seeks to tackle the global entertainment industry – currently valued at $1 trillion. Bit-Z, Liqui, and Gatecoin are the next three biggest TRX exchanges.  
+  
+Major features of TRON are :  
+-Uncontrolled and free data  
+-Using content spreading, to enamble content ecosystem, where  users ca obtain digital assets.  
+-Initial Coin Offering to distribute the digital assets   
+-Framework to allow distributed digital assets exchange (such as games) and market forecasting.  
+
+### Scope
+In this project, we examined the Ethereum dataset: Tronix(TRX). We have preprocessed the data removing the outliers where the transactions are impossible and then identified the distributions of number of user transactions by buyer and number of user transactions by the seller. Then we tried to find the correlation of the number of users made transactions on a specific date with the closing price on the same date.
+
+###Data Set
+The dataset we have considered has two files:   
+Token edge file which has 1,51,8537 transactions. This set has the row structure of "fromNodeID NodeID unixTime tokenAmount"" which implies that fromNodeId sold tokenAmount of the token to toNodeId at time unixTime. Each token has a total circulating amount and subunits. For our token the value is 100000000000 (according to coinmarketcap.com) and has 10e+06 subunits.   
+  
+Token price file which has 254 rows and the row structure is "Date Open High Low Close Volume MarketCap"" which provides the price data on a specific date. Open and Close are the prices of the token at the given date. Volume and MarketCap give total bought/sold tokens and market valuation at that date.  
+
+###Preprocessing the data
+Based on the total supply value of the tronix token, we have removed the outliers which are greater than totalAmount\*subunits. There are 65 transactions where the token amount is greater than the totalsupply\*subunits and 41 unique users involved in the transactions.
+
+```{r include=FALSE}
+df <- read.table("~/Documents/Project1/networktronixTx.txt", quote="\"", comment.char="")
+names(df) <- c("fromId","toId","time","tokenAmount")
+totalsupply <- 100000000000
+subunits <- 10e+06
+threshold <- totalsupply*subunits
+```
+
+
+###Distribution of how many times user buys a token
+To observe the behaviour of number of times user buys a token, we have derived frequencies for each user and then plotted the distribution of frequencies against user counts.As most of the data belongs to smaller frequencies, we have limited the set to see the behaviour of the dataset. For this we have considered the subset of data where user counts<= 600. This results in a set of 97% data excluding 10 outliers. We have used ggplot2 package of R for visualization.
+
+```{r include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(fitdistrplus)
+library(lubridate)
+```
+
+```{r echo=FALSE}
+data1 <- subset(df,df$tokenAmount <= threshold)
+df3 <- as.data.frame(table(data1$toId))
+names(df3) <- c("toId","freq")
+df3s <- as.data.frame(table(df3$freq))
+names(df3s) <- c("freq","nuser")
+df3s1 <- subset(df3s,df3s$nuser <= 600)
+barplot(df3s1$nuser,names.arg=df3s1$freq,xlab="Frequencies",ylab="count")
+
+```
+
+The parameters of the data are
+Mean : `r mean(df3s1$nuser)` 
+Median : `r median(df3s1$nuser)`
+Variance : `r var(df3s1$nuser)`
+Standard Devation : `r sd(df3s1$nuser)`
+
+'Cullen and Frey Graph' gives the summary of best distributions that can fit the data From the below graph, we can see that normal,negative binomial and poisson distributions fit the data better. We have used 'fitdistrplus' package from R for the data visualization.
+
+
+```{r echo=FALSE}
+descdist(df3s1$nuser, discrete = TRUE, boot = 100)
+```
+
+
+Cumulative Distribution Function (CDFs) have most meaning for visualizing the discrete fits. The CDFs of the above distributions are as follows.
+
+```{r echo=FALSE}
+f1n <- fitdist(df3s1$nuser,"nbinom")
+f2n <- fitdist(df3s1$nuser,"pois")
+f3n <- fitdist(df3s1$nuser,"norm")
+plot.legend <- c("nbinom","pois","norm")
+cdfcomp(list(f1n,f2n,f3n), legendtext = plot.legend)
+```
+
+
+```{r echo=FALSE}
+gofstat(list(f1n, f2n,f3n))
+```
+
+The AIC and BIC count are minimum for the negative binomial distribution.so, we can say that negative binomial distribution fits the data better.The estimated parameter is as follows
+
+```{r echo=FALSE}
+f1n
+```
+
+Modelling negative binomial:
+We can see the estimated mean is same as the mean we got from the sample. The probability of success can be calculated by p = size/mu =  0.032
+standard deviation = size(1-p)/p^2 = 19.76
+
+##Distribution of how many times user sells the data
+To observe the behaviour of number of times user sells a token, we have derived frequencies for each user and then plotted the distribution of frequencies against user counts.As most of the data belongs to smaller frequencies, we have limited the set to see the behaviour of the dataset. For this we have considered the subset of data where user counts<= 100. This results in a set of 99.4% data excluding 2 outliers. We have used ggplot2 package of R for visualization.
+
+
+```{r echo=FALSE}
+df4 <- as.data.frame(table(data1$fromId))
+names(df4) <- c("fromId","freq")
+df4s <- as.data.frame(table(df4$freq))
+names(df4s) <- c("freq","nuser")
+df4s$freq<-as.numeric(as.character(df4s$freq))
+df4s1 <- subset(df4s,df4s$nuser <= 100)
+barplot(df4s1$nuser,names.arg=df4s1$freq,xlab="Frequencies",ylab="count")
+```
+
+The parameters of the data are
+
+Mean : `r mean(df4s1$nuser)`
+
+Median : `r median(df4s1$nuser)`
+
+Variance : `r var(df4s1$nuser)`
+
+Standard Devation : `r sd(df4s1$nuser)`
+
+From the below graph, we can see that negative binomial and poisson distributions fit the data better. 
+
+```{r echo=FALSE}
+descdist(df4s1$nuser, discrete = TRUE, boot = 100)
+```
+
+
+Cumulative Distribution Function (CDFs) have most meaning for visualizing the discrete fits. The CDFs of the above distributions are as follows.
+
+```{r echo=FALSE}
+f1n <- fitdist(df4s1$nuser,"nbinom",discrete=TRUE)
+f2n <- fitdist(df4s1$nuser,"pois",discrete=TRUE)
+f3n <- fitdist(df4s1$nuser,"exp",discrete=TRUE)
+plot.legend <- c("nbinom","pois","exp")
+cdfcomp(list(f1n,f2n,f3n), legendtext = plot.legend)
+```
+```{r echo=FALSE}
+gofstat(list(f1n, f2n,f3n))
+```
+
+The AIC and BIC count are minimum for the exponential distribution.So, we can say that exponential distribution fits the data better.
+
+```{r echo=FALSE}
+f3n
+```
+
+The mean and standard deviation of the estimated exponential distribution are 
+mean = 5.024305
+variance = 5.024305 
+
+##Correlation of number of users and price on a specific date 
+
+To find the behaviour of number of users doing transactions on a particular date, we have plotted the graph of number of users against date.
+
+```{r echo=FALSE}
+data1["date"] = as.Date(as.POSIXct(as.numeric(as.character(data1$time)),origin="1970-01-01",tz="GMT"))
+dg <- group_by(data1,date)
+data_grp <- tally(dg)
+names(data_grp) <- c("date","freq")
+ggplot(data = data_grp, aes(x = date, y = freq)) +
+      geom_bar(stat = "identity", fill = "purple") +
+      labs(title = "number of transactions",x = "Date", y = "frequency")
+```
+
+The following is the barplot with date on the x axis and price on y axis. The price behaviour of the tronix token can be observed from the following plot:
+
+```{r echo=FALSE}
+pricedata <- read.table("~/Documents/Project1/TRONIX.txt",sep="\t",comment.char="",header=TRUE)
+pricedata["date1"] <- as.Date(parse_date_time(pricedata$Date,"mdy"))
+ggplot(data = pricedata, aes(x = date1, y = Close)) +
+      geom_bar(stat = "identity", fill = "purple") +
+      labs(title = "price graph",x = "Date", y = "price")
+```
+
+We have merged the grouped data and the pricedata on date and we have obtained the correlation value of 0.14(approximate) for the number of transactions on a date and the closing price of the date.
+
+```{r echo=FALSE}
+merge_data = merge(x=data_grp,y=pricedata,by.x="date",by.y="date1")
+cor(merge_data$freq,merge_data$Close,method="pearson")
+```
+
+To find the correlation for different layers of data, we have divided the dataset into 11 layers and the correlation values for each of the layer are as follows
+
+```{r echo=FALSE}
+x <- 1.373e+05 
+y <- 1
+a <- 0
+i <- 1
+while(x <= 1.000e+16)
+{
+  dfp <- subset(data1, data1$tokenAmount < x & data1$tokenAmount > y)
+  dg <- group_by(dfp,date)
+  data_grp <- tally(dg)
+  names(data_grp) <- c("date","freq")
+  merge_data = merge(x=data_grp,y=pricedata,by.x="date",by.y="date1")
+  a[i] <- cor(merge_data$freq,merge_data$Close,method="pearson")
+  message("The correlation value of layer ",i," is : ",a[i])
+  y <- x
+  x <- x*10
+  i <- i+1
+}
+a
+```
+
+We see that layer 5 has maximum correlation with value 0.894(approximate). In this layer there are 126504 transactions and the p-value is 2.2e-16 which is very less indicating that correlation value is different from 0. The maximum correlation value is 0.894(approximate) which is higher than the Standard Statistic Correlation co-efficient Value of 0.5 and more, inspite of the time span of the tokens being 9 months (2017-08-29 to 2018-05-06), due to the transactions being spread out, it gives a relatively high correlation. Hence denotes a strong positive Linear relationship between the variables being - the number of users and price on a specific date.Since the relationship is known to be linear, or the observed pattern between the two variables appears to be linear, then the correlation coefficient of 0.894  provides a reliable measure of the strength of the linear relationship.  This justifies the number (11) we have chosen to obtain layers, which is to maximize coreelation, and have achieved the purpose of layering the data in that pattern.
+
+```{r echo=FALSE}
+  dfp <- subset(data1, data1$tokenAmount < 1.373e+09 & data1$tokenAmount > 137300000)
+  dg <- group_by(dfp,date)
+  data_grp <- tally(dg)
+  names(data_grp) <- c("date","freq")
+  merge_data = merge(x=data_grp,y=pricedata,by.x="date",by.y="date1")
+  cor.test(merge_data$freq,merge_data$Close,method="pearson")
+```
+
+From below, we can see that the number of transactions and price plot follows normal distribution the mean and standard deviation parameters obtained from fitting ditribution are same as sample. So the picking of pearson test is also justified and there is not a very notable deviation from the other method "Spearman".
+
+```{r echo=FALSE}
+barplot(merge_data$freq,merge_data$Close,xlab="Frequencies",ylab="price")
+f3n <- fitdistr(merge_data$freq,"normal")
+f3n
+```
+
+### Conclusion
+Based on the data analysis performed, we found that distribution of number of user buys follows negative binomial distribution and  number of times user sells follows exponential distribution.
+Correlation: From the layers of the data created, we have found that in layer5 the number of users have strong correlation with price data. The value of 0.89 shows the high correlation value, where the value usually ranges from -1 to 1.
+
+
+### References
+https://en.wikipedia.org/wiki/Ethereum
+https://blockgeeks.com/guides/what-is-ethereum/  
+https://blog.coindirect.com/coin-profile-tron-tronix-trx/  
+https://developers.tron.network/docs/getting-started  
+
+
