@@ -1,6 +1,6 @@
 ---
 title: "Analysis of Tronix token data"
-author: "Kavya Jampani,Beryl Mario Shairu Joseph Antony Bose"
+author: "Beryl Mario Shairu Joseph Antony Bose,Kavya Jampani"
 output: html_document
 ---
 
